@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from datetime import datetime
+from datetime import datetime, timezone
 from app.utils.database import ping_database, get_database
 
 router = APIRouter()
@@ -9,7 +9,7 @@ async def health_check():
     """Basic health check endpoint."""
     return {
         "status": "healthy",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "service": "Flashcard LMS Backend",
         "version": "1.0.0"
     }

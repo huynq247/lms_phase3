@@ -30,6 +30,9 @@ async def connect_to_mongo():
         await db.client.admin.command('ping')
         logger.info("Successfully connected to MongoDB")
         
+        # Initialize collections
+        initialize_collections()
+        
     except Exception as e:
         logger.error(f"Failed to connect to MongoDB: {e}")
         raise
@@ -51,3 +54,28 @@ async def ping_database():
         return True
     except Exception:
         return False
+
+# Collections
+def get_users_collection():
+    """Get users collection."""
+    return db.database.users
+
+def get_flashcards_collection():
+    """Get flashcards collection."""
+    return db.database.flashcards
+
+def get_decks_collection():
+    """Get decks collection."""
+    return db.database.decks
+
+# Collection instances for easy import
+users_collection = None
+flashcards_collection = None
+decks_collection = None
+
+def initialize_collections():
+    """Initialize collection instances after database connection."""
+    global users_collection, flashcards_collection, decks_collection
+    users_collection = get_users_collection()
+    flashcards_collection = get_flashcards_collection()
+    decks_collection = get_decks_collection()

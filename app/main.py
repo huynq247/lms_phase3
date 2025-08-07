@@ -64,6 +64,10 @@ if os.path.exists(settings.upload_dir):
 # Include routers
 app.include_router(health.router, prefix=settings.api_v1_prefix, tags=["health"])
 
+# Import and include auth router
+from app.routers.v1 import auth
+app.include_router(auth.router, prefix=settings.api_v1_prefix, tags=["authentication"])
+
 @app.get("/")
 async def root():
     """Root endpoint."""

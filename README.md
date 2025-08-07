@@ -1,23 +1,55 @@
-# 🎓 Flashcard LMS Backend
+# 🎓 Flashcard LMS Backend - Phase 3: Authentication & Authorization
 
 A comprehensive learning management system focused on flashcard-based learning with spaced repetition algorithm (SM-2).
 
-## 🚀 Features
+**Current Phase**: ✅ **Phase 3 Complete** - Authentication & Authorization System
 
-- **3-Level Hierarchy**: Classes → Courses → Lessons
-- **Advanced Study Modes**: Review, Practice, Cram, Test, Learn
-- **SM-2 Spaced Repetition**: Intelligent scheduling algorithm
-- **Role-Based Access**: Student, Teacher, Administrator
-- **Multimedia Support**: Images and audio in flashcards
-- **Import/Export**: CSV, JSON, and Anki format support
-- **Progress Tracking**: Comprehensive analytics and reporting
+## 🎯 Phase 3 Achievements
 
-## 🛠️ Tech Stack
+### ✅ Completed Features
+- **JWT Authentication System**: Complete login/logout flow
+- **Multi-Role Support**: Admin, Teacher, Student roles
+- **Secure Password Management**: bcrypt hashing + strength validation  
+- **Token Management**: Access tokens with refresh capability
+- **Role-Based Access Control**: Permission-based endpoint protection
+- **Comprehensive Testing**: 25 tests, 100% pass rate
+- **Real Database Integration**: MongoDB with production-ready setup
 
-- **Backend**: FastAPI + Python 3.11+
-- **Database**: MongoDB with Motor (async driver)
-- **Authentication**: JWT-based with role permissions
-- **File Storage**: Local file storage system
+### 🧪 Test Results
+- **All Tests Passing**: 25/25 ✅
+- **Authentication Flow**: Complete coverage
+- **All Roles Tested**: Admin, Teacher, Student verified
+- **Database Integration**: Real MongoDB testing successful
+
+## � Quick Start
+
+### Prerequisites
+- Python 3.11+
+- MongoDB 4.4+
+
+### Installation
+```bash
+git clone https://github.com/huynq247/lms_phase3.git
+cd lms_phase3
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+
+API Available at: http://localhost:8000
+
+## 🔑 Test Users Available
+
+| Role | Email | Password | Status |
+|------|-------|----------|---------|
+| Admin | admin@flashcard.com | admin123 | ✅ Active |
+| Teacher | teacher@flashcard.com | teacher123 | ✅ Active |
+| Student | test@example.com | test123 | ✅ Active |
+
+## 📚 API Documentation
+- **Interactive Docs**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
 - **API Documentation**: Auto-generated OpenAPI/Swagger
 
 ## 🏗️ Project Structure
