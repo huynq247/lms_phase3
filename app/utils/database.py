@@ -55,6 +55,10 @@ async def ping_database():
     except Exception:
         return False
 
+def get_database():
+    """Get database instance."""
+    return db.database
+
 # Collections
 def get_users_collection():
     """Get users collection."""

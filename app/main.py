@@ -82,6 +82,14 @@ app.include_router(auth.router, prefix=settings.api_v1_prefix, tags=["authentica
 from app.routers.v1 import profile
 app.include_router(profile.router, prefix=settings.api_v1_prefix, tags=["user-profile"])
 
+# Import and include admin router
+from app.routers.v1 import admin
+app.include_router(admin.router, prefix=settings.api_v1_prefix, tags=["admin-management"])
+
+# Import and include deck router
+from app.routers.v1 import deck
+app.include_router(deck.router, prefix=settings.api_v1_prefix, tags=["deck-management"])
+
 @app.get("/")
 async def root():
     """Root endpoint."""
