@@ -36,7 +36,8 @@ class DeckService:
         tags_filter: Optional[List[str]] = None,
         difficulty_filter: Optional[str] = None,
         owner_filter: Optional[str] = None,
-        search_query: Optional[str] = None
+        search_query: Optional[str] = None,
+        category_id: Optional[str] = None
     ) -> DeckListResponse:
         """
         Get decks accessible to current user with privacy filtering.
@@ -106,6 +107,11 @@ class DeckService:
                 query_conditions.append({"owner_id": owner_filter})
                 applied_filters["owner"] = owner_filter
             
+            # Category filter
+            if category_id:
+                query_conditions.append({"category_id": category_id})
+                applied_filters["category_id"] = category_id
+            
             # Search query (title + description)
             if search_query:
                 search_regex = {"$regex": search_query, "$options": "i"}
@@ -174,6 +180,7 @@ class DeckService:
             deck_doc = {
                 "title": deck_data.title,
                 "description": deck_data.description,
+                "category_id": deck_data.category_id,
                 "privacy_level": deck_data.privacy_level,
                 "tags": deck_data.tags,
                 "difficulty_level": deck_data.difficulty_level,
@@ -470,10 +477,30 @@ class DeckService:
         # Check access info
         access_info = await self._check_deck_access(deck_doc, current_user)
         
+    async def _convert_to_deck_response(self, deck_doc: Dict, current_user: Dict) -> DeckResponse:
+        """Convert deck document to response model."""
+        # Check access info
+        access_info = await self._check_deck_access(deck_doc, current_user)
+        
+        # Get category name if category_id exists
+        category_name = None
+        if deck_doc.get("category_id"):
+            try:
+                category_doc = await self.db.categories.find_one({
+                    "_id": ObjectId(deck_doc["category_id"])
+                })
+                if category_doc:
+                    category_name = category_doc["name"]
+            except Exception:
+                # If category not found or invalid ObjectId, ignore
+                pass
+        
         return DeckResponse(
             id=str(deck_doc["_id"]),
             title=deck_doc["title"],
             description=deck_doc.get("description"),
+            category_id=deck_doc.get("category_id"),
+            category_name=category_name,
             privacy_level=deck_doc["privacy_level"],
             tags=deck_doc.get("tags", []),
             difficulty_level=deck_doc.get("difficulty_level"),

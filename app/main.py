@@ -90,6 +90,21 @@ app.include_router(admin.router, prefix=settings.api_v1_prefix, tags=["admin-man
 from app.routers.v1 import deck
 app.include_router(deck.router, prefix=settings.api_v1_prefix, tags=["deck-management"])
 
+# Import and include category router
+from app.routers.v1 import category
+app.include_router(category.router, prefix=settings.api_v1_prefix, tags=["category-management"])
+
+# Import and include assignment router
+from app.routers.v1 import assignment
+app.include_router(assignment.router, prefix=settings.api_v1_prefix, tags=["assignment-management"])
+
+# Import and include flashcard router
+from app.routers.v1 import flashcard
+app.include_router(flashcard.router, prefix=settings.api_v1_prefix, tags=["flashcard-management"])
+app.include_router(flashcard.deck_router, prefix=settings.api_v1_prefix, tags=["flashcard-management"])
+
+# Test comment to trigger reload
+
 @app.get("/")
 async def root():
     """Root endpoint."""

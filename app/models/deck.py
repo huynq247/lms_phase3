@@ -21,6 +21,7 @@ class DeckBase(BaseModel):
     """Base deck model with common fields."""
     title: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = Field(None, max_length=1000)
+    category_id: Optional[str] = Field(None, description="Category ID for deck classification")
     privacy_level: str = Field(default=DeckPrivacyLevel.PRIVATE)
     tags: List[str] = Field(default_factory=list, max_items=20)
     difficulty_level: Optional[str] = Field(None, pattern="^(beginner|intermediate|advanced)$")
@@ -129,6 +130,8 @@ class DeckResponse(BaseModel):
     id: str = Field(alias="_id")
     title: str
     description: Optional[str] = None
+    category_id: Optional[str] = None
+    category_name: Optional[str] = None  # Category name for display
     privacy_level: str
     tags: List[str]
     difficulty_level: Optional[str] = None

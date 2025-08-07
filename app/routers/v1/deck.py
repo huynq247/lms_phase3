@@ -1,5 +1,16 @@
 """
-Deck router with CRUD operations and advanced privacy features.
+Deck router wi@router.get("", response_model=DeckListResponse)
+async def get_decks(
+    page: int = Query(1, ge=1, description="Page number"),
+    limit: int = Query(10, ge=1, le=100, description="Items per page"),
+    privacy_level: Optional[str] = Query(None, description="Filter by privacy level"),
+    tags: Optional[str] = Query(None, description="Filter by tags (comma-separated)"),
+    difficulty_level: Optional[str] = Query(None, description="Filter by difficulty level"),
+    owner: Optional[str] = Query(None, description="Filter by owner ID"),
+    search: Optional[str] = Query(None, description="Search in title and description"),
+    category_id: Optional[str] = Query(None, description="Filter by category ID"),
+    current_user: User = Depends(get_current_user)
+):rations and advanced privacy features.
 """
 import logging
 from typing import List, Optional
@@ -26,6 +37,7 @@ async def get_decks(
     difficulty: Optional[str] = Query(None, description="Filter by difficulty level"),
     owner: Optional[str] = Query(None, description="Filter by owner username"),
     search: Optional[str] = Query(None, description="Search in title and description"),
+    category_id: Optional[str] = Query(None, description="Filter by category ID"),
     current_user: User = Depends(get_current_user)
 ):
     """
@@ -64,7 +76,8 @@ async def get_decks(
             tags_filter=tags_filter,
             difficulty_filter=difficulty,
             owner_filter=owner,
-            search_query=search
+            search_query=search,
+            category_id=category_id
         )
         
         logger.info(f"User {current_user.username} retrieved {len(deck_list.decks)} decks (page {page})")
