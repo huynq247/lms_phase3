@@ -1,14 +1,15 @@
 """
 User model definitions.
 """
-from datetime import datetime
-from typing import Optional, List, Any
+from datetime import datetime, time
+from typing import Optional, List, Any, Dict
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import core_schema
 from bson import ObjectId
 
 from app.models.enums import UserRole
+from app.models.profile import LearningPreferences, LearningGoal, StudySession, Achievement, StudyStatistics
 
 
 class PyObjectId(ObjectId):
@@ -69,6 +70,13 @@ class User(BaseModel):
     
     # Relationships
     class_ids: List[PyObjectId] = Field(default_factory=list)
+    
+    # Extended Profile Features (Phase 4.2)
+    learning_preferences: Optional[LearningPreferences] = None
+    learning_goals: List[LearningGoal] = Field(default_factory=list)
+    study_schedule: List[StudySession] = Field(default_factory=list)
+    achievements: List[Achievement] = Field(default_factory=list)
+    study_statistics: Optional[StudyStatistics] = Field(default_factory=StudyStatistics)
     
     model_config = ConfigDict(
         populate_by_name=True,

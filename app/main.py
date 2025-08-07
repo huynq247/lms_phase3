@@ -78,6 +78,10 @@ app.include_router(health.router, prefix=settings.api_v1_prefix, tags=["health"]
 from app.routers.v1 import auth
 app.include_router(auth.router, prefix=settings.api_v1_prefix, tags=["authentication"])
 
+# Import and include profile router
+from app.routers.v1 import profile
+app.include_router(profile.router, prefix=settings.api_v1_prefix, tags=["user-profile"])
+
 @app.get("/")
 async def root():
     """Root endpoint."""
