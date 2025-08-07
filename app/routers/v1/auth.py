@@ -1,8 +1,11 @@
 """
 Authentication endpoints.
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from motor.motor_asyncio import AsyncIOMotorDatabase
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from app.utils.database import get_database
 from app.services.auth_service import AuthService
@@ -18,6 +21,8 @@ from app.core.deps import get_current_user
 from app.models.user import User
 
 
+# Rate limiter setup
+limiter = Limiter(key_func=get_remote_address)
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
@@ -32,7 +37,9 @@ async def register_user(
 
 
 @router.post("/login", response_model=TokenResponse)
+@limiter.limit("5/minute")  # Rate limit: 5 login attempts per minute
 async def login_user(
+    request: Request,
     login_data: UserLoginRequest,
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
@@ -57,9 +64,18 @@ async def logout_user(
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     """Logout current user by blacklisting token."""
-    # Note: In a real implementation, we'd need to get the actual token
-    # For now, we'll simulate the logout
-    return LogoutResponse()
+    auth_service = AuthService(db)
+    return await auth_service.logout_user(str(current_user.id))
+
+
+@router.post("/verify-email")
+async def verify_email(
+    token: str,
+    db: AsyncIOMotorDatabase = Depends(get_database)
+):
+    """Verify user email with verification token."""
+    auth_service = AuthService(db)
+    return await auth_service.verify_email(token)
 
 
 @router.get("/me", response_model=User)
