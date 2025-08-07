@@ -103,6 +103,10 @@ from app.routers.v1 import flashcard
 app.include_router(flashcard.router, prefix=settings.api_v1_prefix, tags=["flashcard-management"])
 app.include_router(flashcard.deck_router, prefix=settings.api_v1_prefix, tags=["flashcard-management"])
 
+# Import and include multimedia router
+from app.routers.v1 import multimedia
+app.include_router(multimedia.router, prefix=settings.api_v1_prefix, tags=["multimedia-management"])
+
 # Test comment to trigger reload
 
 @app.get("/")

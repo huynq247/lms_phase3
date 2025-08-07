@@ -1,3 +1,10 @@
+# =============================================================================
+# FLASHCARD LMS BACKEND - REQUIREMENTS
+# =============================================================================
+# Phase 4 Complete: Authentication, User Management, Deck CRUD, 
+# Categories, Assignments, Flashcard CRUD, Multimedia Support
+# =============================================================================
+
 # Core FastAPI and ASGI
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
@@ -19,9 +26,13 @@ python-multipart==0.0.6
 # Rate limiting
 slowapi==0.1.9
 
-# File Handling
-pillow>=8.0.0
+# File Handling and Multimedia Support
+pillow>=10.0.0
 aiofiles==23.2.1
+python-magic-bin==0.4.14  # For better file type detection (Windows)
+
+# HTTP Client for Testing
+requests==2.31.0
 
 # Testing
 pytest==7.4.3
@@ -31,3 +42,11 @@ pytest-anyio==0.7.1
 
 # Development
 python-dotenv==1.0.0
+
+# =============================================================================
+# INSTALLATION NOTES:
+# - Use Python 3.13+ for optimal performance
+# - Install in virtual environment: python -m venv venv
+# - Activate: venv\Scripts\activate (Windows) or source venv/bin/activate (Linux/Mac)
+# - Install: pip install -r requirements.txt
+# =============================================================================
