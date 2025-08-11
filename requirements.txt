@@ -1,52 +1,79 @@
 # =============================================================================
 # FLASHCARD LMS BACKEND - REQUIREMENTS
 # =============================================================================
-# Phase 4 Complete: Authentication, User Management, Deck CRUD, 
-# Categories, Assignments, Flashcard CRUD, Multimedia Support
+# Phase 4.7 Complete: ID Standardization + Flashcard CRUD 
+# Features: Authentication, User Management, Deck CRUD, Categories, 
+# Assignments, Flashcard CRUD, Multimedia Support, Response Standardization
+# Last Updated: August 11, 2025
 # =============================================================================
 
 # Core FastAPI and ASGI
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
 
-# Database
+# Database (MongoDB Async)
 motor==3.3.2
-pymongo==4.6.0
+pymongo==4.6.1
+bson>=0.5.10
 
 # Data Validation and Settings
-pydantic==2.5.0
+pydantic==2.5.3
 pydantic-settings==2.1.0
-email-validator==2.1.0
+email-validator==2.1.0.post1
 
 # Authentication and Security
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.6
+bcrypt==4.1.2
 
-# Rate limiting
+# Rate Limiting and Middleware
 slowapi==0.1.9
 
 # File Handling and Multimedia Support
-pillow>=10.0.0
+pillow>=10.2.0
 aiofiles==23.2.1
-python-magic-bin==0.4.14  # For better file type detection (Windows)
+python-magic-bin==0.4.14  # Windows file type detection
 
-# HTTP Client for Testing
+# HTTP Client and API Tools
 requests==2.31.0
+httpx==0.26.0
 
-# Testing
-pytest==7.4.3
-pytest-asyncio==0.21.1
-httpx==0.25.2
+# Testing Framework
+pytest==7.4.4
+pytest-asyncio==0.23.3
 pytest-anyio==0.7.1
 
-# Development
+# Development and Debugging
 python-dotenv==1.0.0
+logging-tree==1.9  # For logging debugging
 
 # =============================================================================
 # INSTALLATION NOTES:
-# - Use Python 3.13+ for optimal performance
-# - Install in virtual environment: python -m venv venv
-# - Activate: venv\Scripts\activate (Windows) or source venv/bin/activate (Linux/Mac)
+# =============================================================================
+# Python Version: 3.13+ recommended for optimal performance
+# Virtual Environment Setup:
+#   Windows: python -m venv venv && venv\Scripts\activate
+#   Linux/Mac: python -m venv venv && source venv/bin/activate
+# 
+# Installation Commands:
+#   pip install --upgrade pip
+#   pip install -r requirements.txt
+#
+# Phase 4.7 Features Included:
+#   ✅ Complete ID Standardization (_id -> id conversion)
+#   ✅ ResponseStandardizer middleware
+#   ✅ Flashcard CRUD operations
+#   ✅ Authentication with standardized responses
+#   ✅ MongoDB async operations with Motor
+#   ✅ Comprehensive testing framework
+#   ✅ File upload and multimedia support
+#   ✅ Rate limiting and security
+#
+# Next Phases:
+#   - Phase 4.8: Advanced multimedia upload
+#   - Phase 4.9: Study session management
+#   - Phase 5.x: Analytics and AI features
+# =============================================================================
 # - Install: pip install -r requirements.txt
 # =============================================================================

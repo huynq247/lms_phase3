@@ -1,8 +1,10 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from fastapi.responses import FileResponse
+from fastapi.encoders import jsonable_encoder
 from typing import List
 import os
 from app.utils.file_service import file_service
+from app.utils.response_standardizer import ResponseStandardizer
 from app.config import settings
 
 router = APIRouter()
@@ -14,13 +16,17 @@ async def upload_image(file: UploadFile = File(...)):
         file_path = await file_service.save_file(file, "image")
         file_url = file_service.get_file_url(file_path)
         
-        return {
+        response_data = {
             "message": "Image uploaded successfully",
             "filename": os.path.basename(file_path),
             "file_path": file_path,
             "file_url": file_url,
             "file_type": "image"
         }
+        
+        # Standardize response format (_id -> id)
+        response_dict = jsonable_encoder(response_data)
+        return ResponseStandardizer.create_standardized_response(response_dict)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -31,13 +37,17 @@ async def upload_audio(file: UploadFile = File(...)):
         file_path = await file_service.save_file(file, "audio")
         file_url = file_service.get_file_url(file_path)
         
-        return {
+        response_data = {
             "message": "Audio uploaded successfully",
             "filename": os.path.basename(file_path),
             "file_path": file_path,
             "file_url": file_url,
             "file_type": "audio"
         }
+        
+        # Standardize response format (_id -> id)
+        response_dict = jsonable_encoder(response_data)
+        return ResponseStandardizer.create_standardized_response(response_dict)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -69,16 +79,22 @@ async def delete_file(file_type: str, filename: str):
     success = file_service.delete_file(file_path)
     
     if success:
-        return {"message": "File deleted successfully"}
+        response_data = {"message": "File deleted successfully"}
+        response_dict = jsonable_encoder(response_data)
+        return ResponseStandardizer.create_standardized_response(response_dict)
     else:
         raise HTTPException(status_code=404, detail="File not found or could not be deleted")
 
 @router.get("/info/limits")
 async def get_upload_limits():
     """Get file upload limits and allowed types."""
-    return {
+    response_data = {
         "max_file_size": settings.max_file_size,
         "max_file_size_mb": settings.max_file_size / (1024 * 1024),
         "allowed_image_types": settings.allowed_image_types,
         "allowed_audio_types": settings.allowed_audio_types
     }
+    
+    # Standardize response format (_id -> id)
+    response_dict = jsonable_encoder(response_data)
+    return ResponseStandardizer.create_standardized_response(response_dict)

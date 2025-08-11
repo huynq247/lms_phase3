@@ -7,7 +7,7 @@ from typing import Optional, List, Dict, Any
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from app.utils.database import get_database
+from app.utils.database import db
 from app.models.assignment import (
     DeckAssignmentCreate, DeckAssignmentResponse, AssignmentListResponse,
     AssignmentType, DeckPrivacyUpdateRequest
@@ -22,10 +22,21 @@ class AssignmentService:
     """Service for managing deck assignments and privacy."""
 
     def __init__(self):
-        self.db: AsyncIOMotorDatabase = get_database()
-        self.assignments_collection = self.db.deck_assignments
-        self.decks_collection = self.db.decks
-        self.users_collection = self.db.users
+        # Defer actual collection binding until first use (DB may not be connected at import time)
+        self.db = db.database
+        self.assignments_collection = getattr(self.db, "deck_assignments", None) if self.db is not None else None
+        self.decks_collection = getattr(self.db, "decks", None) if self.db is not None else None
+        self.users_collection = getattr(self.db, "users", None) if self.db is not None else None
+
+    def _ensure_collections(self):
+        """Lazy initialize collections after DB connection is established."""
+        if self.assignments_collection is None or self.decks_collection is None or self.users_collection is None:
+            self.db = db.database
+            if self.db is None:
+                raise RuntimeError("Database not initialized")
+            self.assignments_collection = self.db.deck_assignments
+            self.decks_collection = self.db.decks
+            self.users_collection = self.db.users
 
     async def create_assignment(
         self,
@@ -33,6 +44,7 @@ class AssignmentService:
         current_user_id: str
     ) -> Optional[DeckAssignmentResponse]:
         """Create a new deck assignment."""
+        self._ensure_collections()
         try:
             # Verify deck exists and user has permission
             deck_doc = await self.decks_collection.find_one({"_id": ObjectId(assignment_data.deck_id)})

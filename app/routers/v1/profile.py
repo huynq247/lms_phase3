@@ -3,10 +3,12 @@ User profile management endpoints.
 """
 from typing import List, Dict
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.encoders import jsonable_encoder
 from bson import ObjectId
 
 from app.core.deps import get_current_user
 from app.utils.database import get_database
+from app.utils.response_standardizer import ResponseStandardizer
 from app.models.user import User
 from app.models.profile import (
     UserProfileResponse, 
@@ -45,7 +47,9 @@ async def get_user_profile(
                 detail="User profile not found"
             )
             
-        return profile
+        # Standardize response format (_id -> id)
+        profile_dict = jsonable_encoder(profile)
+        return ResponseStandardizer.create_standardized_response(profile_dict)
         
     except Exception as e:
         raise HTTPException(
@@ -86,7 +90,9 @@ async def update_user_profile(
         achievement_service = AchievementService(db)
         await achievement_service.check_and_award_profile_achievement(current_user.id)
             
-        return updated_profile
+        # Standardize response format (_id -> id)
+        profile_dict = jsonable_encoder(updated_profile)
+        return ResponseStandardizer.create_standardized_response(profile_dict)
         
     except Exception as e:
         raise HTTPException(
@@ -127,7 +133,9 @@ async def update_learning_goals(
         achievement_service = AchievementService(db)
         await achievement_service.check_and_award_goal_achievement(current_user.id)
             
-        return updated_profile
+        # Standardize response format (_id -> id)
+        profile_dict = jsonable_encoder(updated_profile)
+        return ResponseStandardizer.create_standardized_response(profile_dict)
         
     except Exception as e:
         raise HTTPException(
@@ -168,7 +176,9 @@ async def update_study_schedule(
         achievement_service = AchievementService(db)
         await achievement_service.check_and_award_schedule_achievement(current_user.id)
             
-        return updated_profile
+        # Standardize response format (_id -> id)
+        profile_dict = jsonable_encoder(updated_profile)
+        return ResponseStandardizer.create_standardized_response(profile_dict)
         
     except Exception as e:
         raise HTTPException(
@@ -192,7 +202,9 @@ async def get_user_achievements(
         achievement_service = AchievementService(db)
         achievements_data = await achievement_service.get_user_achievements(current_user.id)
         
-        return achievements_data
+        # Standardize response format (_id -> id)
+        achievements_dict = jsonable_encoder(achievements_data)
+        return ResponseStandardizer.create_standardized_response(achievements_dict)
         
     except Exception as e:
         raise HTTPException(

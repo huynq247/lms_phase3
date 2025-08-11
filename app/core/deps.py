@@ -1,7 +1,7 @@
 """
 FastAPI dependencies for authentication and authorization.
 """
-from typing import Optional
+from typing import Optional, List, Union
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -18,7 +18,7 @@ security = HTTPBearer()
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: AsyncIOMotorDatabase = Depends(get_database)
+    db = Depends(get_database)
 ) -> User:
     """Get current authenticated user."""
     
@@ -74,13 +74,24 @@ async def get_current_active_user(
     return current_user
 
 
-def require_role(required_role: UserRole):
+def require_role(required_roles: Union[UserRole, List[UserRole]]):
     """Dependency factory for role-based access control."""
     def role_checker(current_user: User = Depends(get_current_active_user)) -> User:
-        if current_user.role != required_role:
+        # Convert single role to list for consistent checking
+        if isinstance(required_roles, UserRole):
+            roles_list = [required_roles]
+        else:
+            roles_list = required_roles
+            
+        if current_user.role not in roles_list:
+            if len(roles_list) == 1:
+                detail = f"Operation requires {roles_list[0].value} role"
+            else:
+                role_names = [role.value for role in roles_list]
+                detail = f"Operation requires one of: {', '.join(role_names)} roles"
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Operation requires {required_role.value} role"
+                detail=detail
             )
         return current_user
     return role_checker
@@ -108,7 +119,7 @@ def require_teacher_or_admin(current_user: User = Depends(get_current_active_use
 
 async def get_optional_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False)),
-    db: AsyncIOMotorDatabase = Depends(get_database)
+    db = Depends(get_database)
 ) -> Optional[User]:
     """Get current user if authenticated, None otherwise."""
     

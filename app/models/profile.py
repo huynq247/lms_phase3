@@ -152,6 +152,8 @@ class UserProfileUpdate(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     avatar_url: Optional[str] = None
+    bio: Optional[str] = None
+    timezone: Optional[str] = None
     
     # Extended profile fields
     learning_preferences: Optional[LearningPreferences] = None
@@ -180,6 +182,8 @@ class UserProfileResponse(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     avatar_url: Optional[str] = None
+    bio: Optional[str] = None
+    timezone: Optional[str] = None
     is_active: bool
     is_verified: bool
     created_at: datetime
@@ -198,7 +202,8 @@ class UserProfileResponse(BaseModel):
 class AchievementsResponse(BaseModel):
     """Response for user achievements."""
     achievements: List[Achievement]
-    total_count: int
+    total_achievements: int
+    unlocked_count: int
     categories: Dict[str, int]  # Category -> count mapping
     
     model_config = ConfigDict(
@@ -214,7 +219,8 @@ class AchievementsResponse(BaseModel):
                         "unlocked_at": "2024-01-15T10:30:00"
                     }
                 ],
-                "total_count": 1,
+                "total_achievements": 10,
+                "unlocked_count": 1,
                 "categories": {"general": 1}
             }
         }

@@ -3,10 +3,12 @@ Admin user management endpoints.
 """
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.encoders import jsonable_encoder
 from bson import ObjectId
 
 from app.core.deps import get_current_user
 from app.utils.database import get_database
+from app.utils.response_standardizer import ResponseStandardizer
 from app.models.user import User, UserRole
 from app.models.admin import (
     UserListResponse,
@@ -60,7 +62,9 @@ async def get_users(
             is_active=is_active
         )
         
-        return users_data
+        # Standardize response format (_id -> id)
+        users_dict = jsonable_encoder(users_data)
+        return ResponseStandardizer.create_standardized_response(users_dict)
         
     except Exception as e:
         raise HTTPException(
@@ -98,7 +102,9 @@ async def create_user(
                 detail="Failed to create user. Username or email may already exist."
             )
         
-        return created_user
+        # Standardize response format (_id -> id)
+        user_dict = jsonable_encoder(created_user)
+        return ResponseStandardizer.create_standardized_response(user_dict)
         
     except HTTPException:
         raise
@@ -152,7 +158,9 @@ async def reset_user_password(
                 detail="User not found"
             )
         
-        return reset_result
+        # Standardize response format (_id -> id)
+        reset_dict = jsonable_encoder(reset_result)
+        return ResponseStandardizer.create_standardized_response(reset_dict)
         
     except HTTPException:
         raise
@@ -213,7 +221,9 @@ async def update_user_role(
                 detail="User not found"
             )
         
-        return updated_user
+        # Standardize response format (_id -> id)
+        user_dict = jsonable_encoder(updated_user)
+        return ResponseStandardizer.create_standardized_response(user_dict)
         
     except HTTPException:
         raise
@@ -274,12 +284,16 @@ async def deactivate_user(
                 detail="User not found"
             )
         
-        return {
+        response_data = {
             "message": "User deactivated successfully",
             "user_id": user_id,
             "deactivated_by": str(current_user.id),
             "reason": reason
         }
+        
+        # Standardize response format (_id -> id)
+        response_dict = jsonable_encoder(response_data)
+        return ResponseStandardizer.create_standardized_response(response_dict)
         
     except HTTPException:
         raise

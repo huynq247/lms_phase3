@@ -4,8 +4,10 @@ Assignment API router for deck assignments and privacy management.
 import logging
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Path
+from fastapi.encoders import jsonable_encoder
 
 from app.core.deps import get_current_user
+from app.utils.response_standardizer import ResponseStandardizer
 from app.models.user import User
 from app.models.assignment import (
     DeckAssignmentCreate, DeckAssignmentResponse, AssignmentListResponse,
@@ -55,7 +57,10 @@ async def update_deck_privacy(
             )
         
         logger.info(f"User {current_user.username} updated privacy for deck {deck_id}")
-        return {"message": "Deck privacy updated successfully"}
+        
+        response_data = {"message": "Deck privacy updated successfully"}
+        response_dict = jsonable_encoder(response_data)
+        return ResponseStandardizer.create_standardized_response(response_dict)
         
     except ValueError as e:
         logger.warning(f"Privacy update validation error: {str(e)}")
@@ -107,7 +112,10 @@ async def assign_deck_to_class(
             )
         
         logger.info(f"User {current_user.username} assigned deck {deck_id} to class {class_id}")
-        return assignment
+        
+        # Standardize response format (_id -> id)
+        assignment_dict = jsonable_encoder(assignment)
+        return ResponseStandardizer.create_standardized_response(assignment_dict)
         
     except ValueError as e:
         logger.warning(f"Class assignment error: {str(e)}")
@@ -159,7 +167,10 @@ async def assign_deck_to_course(
             )
         
         logger.info(f"User {current_user.username} assigned deck {deck_id} to course {course_id}")
-        return assignment
+        
+        # Standardize response format (_id -> id)
+        assignment_dict = jsonable_encoder(assignment)
+        return ResponseStandardizer.create_standardized_response(assignment_dict)
         
     except ValueError as e:
         logger.warning(f"Course assignment error: {str(e)}")
@@ -211,7 +222,10 @@ async def assign_deck_to_lesson(
             )
         
         logger.info(f"User {current_user.username} assigned deck {deck_id} to lesson {lesson_id}")
-        return assignment
+        
+        # Standardize response format (_id -> id)
+        assignment_dict = jsonable_encoder(assignment)
+        return ResponseStandardizer.create_standardized_response(assignment_dict)
         
     except ValueError as e:
         logger.warning(f"Lesson assignment error: {str(e)}")
@@ -256,7 +270,10 @@ async def remove_assignment(
             )
         
         logger.info(f"User {current_user.username} removed assignment {assignment_id}")
-        return {"message": "Assignment removed successfully"}
+        
+        response_data = {"message": "Assignment removed successfully"}
+        response_dict = jsonable_encoder(response_data)
+        return ResponseStandardizer.create_standardized_response(response_dict)
         
     except ValueError as e:
         logger.warning(f"Assignment removal error: {str(e)}")
@@ -298,7 +315,10 @@ async def get_deck_assignments(
         )
         
         logger.info(f"User {current_user.username} retrieved assignments for deck {deck_id}")
-        return assignments
+        
+        # Standardize response format (_id -> id)
+        assignments_dict = jsonable_encoder(assignments)
+        return ResponseStandardizer.create_standardized_response(assignments_dict)
         
     except ValueError as e:
         logger.warning(f"Get deck assignments error: {str(e)}")

@@ -11,6 +11,14 @@ class UserRole(str, Enum):
     STUDENT = "student"
 
 
+class DifficultyLevel(str, Enum):
+    """Course difficulty levels."""
+    BEGINNER = "beginner"
+    INTERMEDIATE = "intermediate"
+    ADVANCED = "advanced"
+    EXPERT = "expert"
+
+
 class Permission(str, Enum):
     """System permissions."""
     # User Management

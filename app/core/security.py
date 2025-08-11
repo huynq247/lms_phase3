@@ -151,7 +151,7 @@ async def is_token_blacklisted(token: str) -> bool:
     """Check if token is blacklisted."""
     from app.utils.database import get_database
     
-    db = get_database()
+    db = await get_database()
     result = await db.token_blacklist.find_one({"token": token})
     return result is not None
 

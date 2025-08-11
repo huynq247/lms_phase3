@@ -5,12 +5,14 @@ Handles image and audio file uploads with validation and storage.
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
 from fastapi.responses import FileResponse
+from fastapi.encoders import jsonable_encoder
 from typing import Optional
 import logging
 import os
 from pathlib import Path
 
 from app.core.deps import get_current_user
+from app.utils.response_standardizer import ResponseStandardizer
 from app.services.multimedia_service import MultimediaService
 from app.models.user import User
 
@@ -38,12 +40,16 @@ async def upload_question_image(
         
         logger.info(f"User {current_user.email} uploaded question image for flashcard {flashcard_id}")
         
-        return {
+        response_data = {
             "message": "Question image uploaded successfully",
             "file_url": file_url,
             "flashcard_id": flashcard_id,
             "media_type": "question_image"
         }
+        
+        # Standardize response format (_id -> id)
+        response_dict = jsonable_encoder(response_data)
+        return ResponseStandardizer.create_standardized_response(response_dict)
         
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -70,12 +76,16 @@ async def upload_answer_image(
         
         logger.info(f"User {current_user.email} uploaded answer image for flashcard {flashcard_id}")
         
-        return {
+        response_data = {
             "message": "Answer image uploaded successfully",
             "file_url": file_url,
             "flashcard_id": flashcard_id,
             "media_type": "answer_image"
         }
+        
+        # Standardize response format (_id -> id)
+        response_dict = jsonable_encoder(response_data)
+        return ResponseStandardizer.create_standardized_response(response_dict)
         
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -102,12 +112,16 @@ async def upload_question_audio(
         
         logger.info(f"User {current_user.email} uploaded question audio for flashcard {flashcard_id}")
         
-        return {
+        response_data = {
             "message": "Question audio uploaded successfully",
             "file_url": file_url,
             "flashcard_id": flashcard_id,
             "media_type": "question_audio"
         }
+        
+        # Standardize response format (_id -> id)
+        response_dict = jsonable_encoder(response_data)
+        return ResponseStandardizer.create_standardized_response(response_dict)
         
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -134,12 +148,16 @@ async def upload_answer_audio(
         
         logger.info(f"User {current_user.email} uploaded answer audio for flashcard {flashcard_id}")
         
-        return {
+        response_data = {
             "message": "Answer audio uploaded successfully",
             "file_url": file_url,
             "flashcard_id": flashcard_id,
             "media_type": "answer_audio"
         }
+        
+        # Standardize response format (_id -> id)
+        response_dict = jsonable_encoder(response_data)
+        return ResponseStandardizer.create_standardized_response(response_dict)
         
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -168,11 +186,15 @@ async def delete_flashcard_media(
         
         logger.info(f"User {current_user.email} deleted {media_type} from flashcard {flashcard_id}")
         
-        return {
+        response_data = {
             "message": f"{media_type} deleted successfully",
             "flashcard_id": flashcard_id,
             "media_type": media_type
         }
+        
+        # Standardize response format (_id -> id)
+        response_dict = jsonable_encoder(response_data)
+        return ResponseStandardizer.create_standardized_response(response_dict)
         
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

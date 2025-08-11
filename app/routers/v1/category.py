@@ -4,8 +4,10 @@ Category router for deck categorization endpoints.
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 
 from app.core.deps import get_current_user
+from app.utils.response_standardizer import ResponseStandardizer
 from app.models.category import (
     CategoryCreateRequest, CategoryUpdateRequest, 
     CategoryResponse, CategoryListResponse
@@ -32,7 +34,10 @@ async def get_categories():
         categories = await category_service.get_categories()
         
         logger.info(f"Retrieved {categories.total_count} categories")
-        return categories
+        
+        # Standardize response format (_id -> id)
+        categories_dict = jsonable_encoder(categories)
+        return ResponseStandardizer.create_standardized_response(categories_dict)
         
     except Exception as e:
         logger.error(f"Error getting categories: {str(e)}")
@@ -64,7 +69,10 @@ async def create_category(
         )
         
         logger.info(f"Admin {current_user.username} created category: {category.name}")
-        return category
+        
+        # Standardize response format (_id -> id)
+        category_dict = jsonable_encoder(category)
+        return ResponseStandardizer.create_standardized_response(category_dict)
         
     except PermissionError as e:
         raise HTTPException(
@@ -114,7 +122,10 @@ async def update_category(
             )
         
         logger.info(f"Admin {current_user.username} updated category: {category.name}")
-        return category
+        
+        # Standardize response format (_id -> id)
+        category_dict = jsonable_encoder(category)
+        return ResponseStandardizer.create_standardized_response(category_dict)
         
     except PermissionError as e:
         raise HTTPException(
@@ -162,9 +173,14 @@ async def delete_category(
             )
         
         logger.info(f"Admin {current_user.username} deleted category: {category_id}")
+        
+        response_data = {"message": "Category deleted successfully"}
+        response_dict = jsonable_encoder(response_data)
+        standardized_response = ResponseStandardizer.create_standardized_response(response_dict)
+        
         return JSONResponse(
             status_code=status.HTTP_200_OK,
-            content={"message": "Category deleted successfully"}
+            content=standardized_response
         )
         
     except PermissionError as e:
@@ -194,12 +210,17 @@ async def seed_predefined_categories(
         seeded_count = await category_service.seed_predefined_categories()
         
         logger.info(f"Admin {current_user.username} seeded {seeded_count} predefined categories")
+        
+        response_data = {
+            "message": f"Seeded {seeded_count} predefined categories",
+            "seeded_count": seeded_count
+        }
+        response_dict = jsonable_encoder(response_data)
+        standardized_response = ResponseStandardizer.create_standardized_response(response_dict)
+        
         return JSONResponse(
             status_code=status.HTTP_201_CREATED,
-            content={
-                "message": f"Seeded {seeded_count} predefined categories",
-                "seeded_count": seeded_count
-            }
+            content=standardized_response
         )
         
     except PermissionError as e:

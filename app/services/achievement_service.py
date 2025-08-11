@@ -13,7 +13,7 @@ from app.services.profile_service import ProfileService
 class AchievementService:
     """Service for managing user achievements."""
     
-    def __init__(self, db: AsyncIOMotorDatabase):
+    def __init__(self, db):
         self.db = db
         self.users_collection = db.users
         self.profile_service = ProfileService(db)
@@ -37,9 +37,13 @@ class AchievementService:
                 category = achievement.category
                 categories[category] = categories.get(category, 0) + 1
             
+            # Total available achievements (hardcoded for now)
+            total_available = 15  # Profile, Goal, Schedule, Consistency, Volume, Accuracy achievements
+            
             return AchievementsResponse(
                 achievements=achievements,
-                total_count=len(achievements),
+                total_achievements=total_available,
+                unlocked_count=len(achievements),
                 categories=categories
             )
             
@@ -47,7 +51,8 @@ class AchievementService:
             print(f"Error getting user achievements: {e}")
             return AchievementsResponse(
                 achievements=[],
-                total_count=0,
+                total_achievements=15,
+                unlocked_count=0,
                 categories={}
             )
     

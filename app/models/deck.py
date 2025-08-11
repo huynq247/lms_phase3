@@ -5,10 +5,11 @@ from datetime import datetime
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field, validator
 from bson import ObjectId
+from enum import Enum
 from app.models.enums import UserRole
 
 
-class DeckPrivacyLevel(str):
+class DeckPrivacyLevel(str, Enum):
     """Deck privacy levels for advanced access control."""
     PRIVATE = "private"                    # Owner only
     CLASS_ASSIGNED = "class-assigned"      # Assigned to specific class
@@ -184,6 +185,7 @@ class DeckListResponse(BaseModel):
     """Paginated deck list response with privacy filtering."""
     decks: List[DeckResponse]
     total_count: int
+    total: int  # Add total attribute for compatibility
     page: int
     limit: int
     total_pages: int
@@ -207,6 +209,7 @@ class DeckListResponse(BaseModel):
                     }
                 ],
                 "total_count": 25,
+                "total": 25,
                 "page": 1,
                 "limit": 10,
                 "total_pages": 3,

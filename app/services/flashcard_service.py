@@ -7,7 +7,7 @@ from typing import Optional, List, Dict, Any
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from app.utils.database import get_database
+from app.utils.database import db
 from app.models.flashcard import (
     FlashcardCreateRequest, FlashcardUpdateRequest, FlashcardResponse,
     FlashcardListResponse, FlashcardBulkCreateRequest, FlashcardBulkCreateResponse
@@ -21,10 +21,21 @@ class FlashcardService:
     """Service for flashcard management with multimedia support."""
 
     def __init__(self):
-        self.db: AsyncIOMotorDatabase = get_database()
-        self.flashcards_collection = self.db.flashcards
-        self.decks_collection = self.db.decks
-        self.users_collection = self.db.users
+        # Defer actual collection binding until first use (DB may not be connected at import time)
+        self.db = db.database
+        self.flashcards_collection = getattr(self.db, "flashcards", None) if self.db is not None else None
+        self.decks_collection = getattr(self.db, "decks", None) if self.db is not None else None
+        self.users_collection = getattr(self.db, "users", None) if self.db is not None else None
+
+    def _ensure_collections(self):
+        """Lazy initialize collections after DB connection is established."""
+        if self.flashcards_collection is None or self.decks_collection is None or self.users_collection is None:
+            self.db = db.database
+            if self.db is None:
+                raise RuntimeError("Database not initialized")
+            self.flashcards_collection = self.db.flashcards
+            self.decks_collection = self.db.decks
+            self.users_collection = self.db.users
 
     async def get_deck_flashcards(
         self,
@@ -37,6 +48,7 @@ class FlashcardService:
         search_query: Optional[str] = None
     ) -> FlashcardListResponse:
         """Get paginated flashcards for a deck with filtering."""
+        self._ensure_collections()
         try:
             # Verify deck exists and user has access
             deck_doc = await self.decks_collection.find_one({"_id": ObjectId(deck_id)})
@@ -116,6 +128,7 @@ class FlashcardService:
         current_user_id: str
     ) -> FlashcardResponse:
         """Create a new flashcard in a deck."""
+        self._ensure_collections()
         try:
             # Verify deck exists and user has edit permission
             deck_doc = await self.decks_collection.find_one({"_id": ObjectId(deck_id)})
@@ -179,6 +192,7 @@ class FlashcardService:
         current_user_id: str
     ) -> Optional[FlashcardResponse]:
         """Get a specific flashcard by ID."""
+        self._ensure_collections()
         try:
             # Get flashcard
             flashcard_doc = await self.flashcards_collection.find_one({"_id": ObjectId(flashcard_id)})
@@ -212,6 +226,7 @@ class FlashcardService:
         current_user_id: str
     ) -> Optional[FlashcardResponse]:
         """Update an existing flashcard."""
+        self._ensure_collections()
         try:
             # Get flashcard and verify it exists
             flashcard_doc = await self.flashcards_collection.find_one({"_id": ObjectId(flashcard_id)})
@@ -268,6 +283,7 @@ class FlashcardService:
         current_user_id: str
     ) -> bool:
         """Delete a flashcard."""
+        self._ensure_collections()
         try:
             # Get flashcard and verify it exists
             flashcard_doc = await self.flashcards_collection.find_one({"_id": ObjectId(flashcard_id)})
@@ -312,6 +328,7 @@ class FlashcardService:
         current_user_id: str
     ) -> FlashcardBulkCreateResponse:
         """Create multiple flashcards at once."""
+        self._ensure_collections()
         try:
             # Verify deck exists and user has edit permission
             deck_doc = await self.decks_collection.find_one({"_id": ObjectId(deck_id)})

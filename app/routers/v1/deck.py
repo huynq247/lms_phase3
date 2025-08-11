@@ -1,23 +1,16 @@
 """
-Deck router wi@router.get("", response_model=DeckListResponse)
-async def get_decks(
-    page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(10, ge=1, le=100, description="Items per page"),
-    privacy_level: Optional[str] = Query(None, description="Filter by privacy level"),
-    tags: Optional[str] = Query(None, description="Filter by tags (comma-separated)"),
-    difficulty_level: Optional[str] = Query(None, description="Filter by difficulty level"),
-    owner: Optional[str] = Query(None, description="Filter by owner ID"),
-    search: Optional[str] = Query(None, description="Search in title and description"),
-    category_id: Optional[str] = Query(None, description="Filter by category ID"),
-    current_user: User = Depends(get_current_user)
-):rations and advanced privacy features.
+Deck router with advanced privacy features.
 """
 import logging
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
+from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.core.deps import get_current_user
+from app.utils.database import get_database
+from app.utils.response_standardizer import ResponseStandardizer
 from app.models.deck import (
     DeckCreateRequest, DeckUpdateRequest, DeckResponse, DeckListResponse
 )
@@ -38,7 +31,8 @@ async def get_decks(
     owner: Optional[str] = Query(None, description="Filter by owner username"),
     search: Optional[str] = Query(None, description="Search in title and description"),
     category_id: Optional[str] = Query(None, description="Filter by category ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    db = Depends(get_database)
 ):
     """
     Get paginated list of decks accessible to current user.
@@ -64,8 +58,8 @@ async def get_decks(
         # DEBUG: Log parameters
         logger.info(f"Router get_decks called with privacy_level: {privacy_level}")
         
-        # Get deck service
-        deck_service = DeckService()
+        # Get deck service with database dependency
+        deck_service = DeckService(database=db)
         
         # Get accessible decks
         deck_list = await deck_service.get_user_accessible_decks(
@@ -81,7 +75,10 @@ async def get_decks(
         )
         
         logger.info(f"User {current_user.username} retrieved {len(deck_list.decks)} decks (page {page})")
-        return deck_list
+        
+        # Standardize response format (_id -> id)
+        deck_list_dict = jsonable_encoder(deck_list)
+        return ResponseStandardizer.create_standardized_response(deck_list_dict)
         
     except Exception as e:
         logger.error(f"Error getting decks for user {current_user.username}: {str(e)}")
@@ -94,7 +91,8 @@ async def get_decks(
 @router.post("", response_model=DeckResponse, status_code=status.HTTP_201_CREATED)
 async def create_deck(
     deck_data: DeckCreateRequest,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    db = Depends(get_database)
 ):
     """
     Create a new deck.
@@ -112,7 +110,7 @@ async def create_deck(
     - `public`: Everyone can access
     """
     try:
-        deck_service = DeckService()
+        deck_service = DeckService(database=db)
         
         # Create deck
         new_deck = await deck_service.create_deck(
@@ -121,7 +119,10 @@ async def create_deck(
         )
         
         logger.info(f"User {current_user.username} created deck: {new_deck.title}")
-        return new_deck
+        
+        # Standardize response format (_id -> id)
+        deck_dict = jsonable_encoder(new_deck)
+        return ResponseStandardizer.create_standardized_response(deck_dict, status_code=status.HTTP_201_CREATED)
         
     except PermissionError as e:
         logger.warning(f"Permission denied for user {current_user.username}: {str(e)}")
@@ -146,7 +147,8 @@ async def create_deck(
 @router.get("/{deck_id}", response_model=DeckResponse)
 async def get_deck(
     deck_id: str,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    db = Depends(get_database)
 ):
     """
     Get a specific deck by ID.
@@ -158,7 +160,7 @@ async def get_deck(
     - Assigned decks accessible to assigned users
     """
     try:
-        deck_service = DeckService()
+        deck_service = DeckService(database=db)
         
         # Get deck
         deck = await deck_service.get_deck_by_id(
@@ -173,7 +175,10 @@ async def get_deck(
             )
         
         logger.info(f"User {current_user.username} accessed deck: {deck.title}")
-        return deck
+        
+        # Standardize response format (_id -> id)
+        deck_dict = jsonable_encoder(deck)
+        return ResponseStandardizer.create_standardized_response(deck_dict)
         
     except HTTPException:
         raise
@@ -189,7 +194,8 @@ async def get_deck(
 async def update_deck(
     deck_id: str,
     deck_data: DeckUpdateRequest,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    db = Depends(get_database)
 ):
     """
     Update a deck.
@@ -204,7 +210,7 @@ async def update_deck(
     - Assignment changes require appropriate permissions
     """
     try:
-        deck_service = DeckService()
+        deck_service = DeckService(database=db)
         
         # Update deck
         updated_deck = await deck_service.update_deck(
@@ -220,7 +226,10 @@ async def update_deck(
             )
         
         logger.info(f"User {current_user.username} updated deck: {updated_deck.title}")
-        return updated_deck
+        
+        # Standardize response format (_id -> id)
+        deck_dict = jsonable_encoder(updated_deck)
+        return ResponseStandardizer.create_standardized_response(deck_dict)
         
     except PermissionError as e:
         logger.warning(f"Permission denied for user {current_user.username}: {str(e)}")
@@ -245,7 +254,8 @@ async def update_deck(
 @router.delete("/{deck_id}")
 async def delete_deck(
     deck_id: str,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    db = Depends(get_database)
 ):
     """
     Delete a deck.
@@ -258,7 +268,7 @@ async def delete_deck(
     **Warning:** This action cannot be undone.
     """
     try:
-        deck_service = DeckService()
+        deck_service = DeckService(database=db)
         
         # Delete deck
         success = await deck_service.delete_deck(

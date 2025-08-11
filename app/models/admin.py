@@ -21,6 +21,7 @@ class AdminUserResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     last_login: Optional[datetime] = None
+    last_modified_by: Optional[str] = None  # Admin who last modified this user
     
     class Config:
         populate_by_name = True
@@ -29,7 +30,8 @@ class AdminUserResponse(BaseModel):
 class UserListResponse(BaseModel):
     """Paginated user list response."""
     users: List[AdminUserResponse]
-    total_count: int
+    total: int  # Change total_count to total
+    total_count: int  # Keep both for compatibility
     page: int
     limit: int
     total_pages: int
@@ -49,6 +51,7 @@ class UserListResponse(BaseModel):
                         "is_verified": True
                     }
                 ],
+                "total": 50,
                 "total_count": 50,
                 "page": 1,
                 "limit": 10,

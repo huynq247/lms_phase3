@@ -107,6 +107,14 @@ app.include_router(flashcard.deck_router, prefix=settings.api_v1_prefix, tags=["
 from app.routers.v1 import multimedia
 app.include_router(multimedia.router, prefix=settings.api_v1_prefix, tags=["multimedia-management"])
 
+# Import and include classroom router (Phase 5.1)
+from app.routers.v1 import classroom
+app.include_router(classroom.router, prefix=settings.api_v1_prefix, tags=["class-management"])
+
+# Import and include course router (Phase 5.3)
+from app.routers.v1 import courses
+app.include_router(courses.router, prefix=settings.api_v1_prefix, tags=["course-management"])
+
 # Test comment to trigger reload
 
 @app.get("/")

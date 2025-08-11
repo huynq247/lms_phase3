@@ -30,7 +30,7 @@ from app.schemas.auth import (
 class AuthService:
     """Authentication service."""
     
-    def __init__(self, db: AsyncIOMotorDatabase):
+    def __init__(self, db):
         self.db = db
         self.users_collection = db.users
     

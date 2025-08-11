@@ -20,7 +20,7 @@ from app.models.profile import (
 class ProfileService:
     """Service for managing user profiles."""
     
-    def __init__(self, db: AsyncIOMotorDatabase):
+    def __init__(self, db):
         self.db = db
         self.users_collection = db.users
     
@@ -110,18 +110,15 @@ class ProfileService:
     async def update_learning_goals(
         self, 
         user_id: str, 
-        learning_goals: List[LearningGoal]
+        learning_goals: List[dict]  # Accept list of dicts directly
     ) -> Optional[UserProfileResponse]:
         """Update user's learning goals."""
         try:
-            # Convert goals to dict format for MongoDB
-            goals_data = [goal.model_dump() for goal in learning_goals]
-            
             result = await self.users_collection.update_one(
                 {"_id": ObjectId(user_id)},
                 {
                     "$set": {
-                        "learning_goals": goals_data,
+                        "learning_goals": learning_goals,
                         "updated_at": datetime.utcnow()
                     }
                 }

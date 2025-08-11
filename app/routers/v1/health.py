@@ -1,18 +1,24 @@
 from fastapi import APIRouter, Depends
+from fastapi.encoders import jsonable_encoder
 from datetime import datetime, timezone
 from app.utils.database import ping_database, get_database
+from app.utils.response_standardizer import ResponseStandardizer
 
 router = APIRouter()
 
 @router.get("/health")
 async def health_check():
     """Basic health check endpoint."""
-    return {
+    response_data = {
         "status": "healthy",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "service": "Flashcard LMS Backend",
         "version": "1.0.0"
     }
+    
+    # Standardize response format (_id -> id)
+    response_dict = jsonable_encoder(response_data)
+    return ResponseStandardizer.create_standardized_response(response_dict)
 
 @router.get("/health/detailed")
 async def detailed_health_check(db = Depends(get_database)):
@@ -34,7 +40,9 @@ async def detailed_health_check(db = Depends(get_database)):
         }
     }
     
-    return health_status
+    # Standardize response format (_id -> id)
+    response_dict = jsonable_encoder(health_status)
+    return ResponseStandardizer.create_standardized_response(response_dict)
 
 @router.get("/health/ready")
 async def readiness_check():
@@ -42,11 +50,17 @@ async def readiness_check():
     db_connected = await ping_database()
     
     if not db_connected:
-        return {"status": "not ready", "reason": "database not connected"}, 503
+        response_data = {"status": "not ready", "reason": "database not connected"}
+        response_dict = jsonable_encoder(response_data)
+        return ResponseStandardizer.create_standardized_response(response_dict), 503
     
-    return {"status": "ready"}
+    response_data = {"status": "ready"}
+    response_dict = jsonable_encoder(response_data)
+    return ResponseStandardizer.create_standardized_response(response_dict)
 
 @router.get("/health/live")
 async def liveness_check():
     """Kubernetes liveness probe."""
-    return {"status": "alive"}
+    response_data = {"status": "alive"}
+    response_dict = jsonable_encoder(response_data)
+    return ResponseStandardizer.create_standardized_response(response_dict)

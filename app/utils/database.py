@@ -1,17 +1,21 @@
 from motor.motor_asyncio import AsyncIOMotorClient
+from typing import Optional
 from app.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
 
 class Database:
-    client: AsyncIOMotorClient | None = None
-    database = None
+    def __init__(self):
+        self.client = None  # Optional[AsyncIOMotorClient]
+        self.database = None
 
 db = Database()
 
 async def get_database():
-    """Get database instance."""
+    """Async dependency to get (and lazily initialize) database instance."""
+    if db.database is None:
+        await connect_to_mongo()
     return db.database
 
 async def connect_to_mongo():
@@ -55,9 +59,7 @@ async def ping_database():
     except Exception:
         return False
 
-def get_database():
-    """Get database instance."""
-    return db.database
+# NOTE: Removed duplicate synchronous get_database definition to avoid shadowing the async one above.
 
 # Collections
 def get_users_collection():

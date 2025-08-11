@@ -22,8 +22,12 @@ logger = logging.getLogger(__name__)
 class DeckService:
     """Service for deck management with advanced privacy features."""
     
-    def __init__(self):
-        self.db = db.database
+    def __init__(self, database=None):
+        # Use provided database or fall back to global db
+        if database is not None:
+            self.db = database
+        else:
+            self.db = db.database
         self.collection = self.db.decks
         self.users_collection = self.db.users
         
@@ -149,6 +153,7 @@ class DeckService:
             return DeckListResponse(
                 decks=decks,
                 total_count=total_count,
+                total=total_count,  # Add total for compatibility
                 page=page,
                 limit=limit,
                 total_pages=total_pages,

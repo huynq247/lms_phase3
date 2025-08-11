@@ -22,7 +22,7 @@ from app.core.security import get_password_hash
 class AdminService:
     """Service for admin user management operations."""
     
-    def __init__(self, db: AsyncIOMotorDatabase):
+    def __init__(self, db):
         self.db = db
         self.users_collection = db.users
         self.audit_logs_collection = db.admin_audit_logs
@@ -78,6 +78,7 @@ class AdminService:
             
             return UserListResponse(
                 users=users,
+                total=total_count,  # Add total field
                 total_count=total_count,
                 page=page,
                 limit=limit,
@@ -90,6 +91,7 @@ class AdminService:
             print(f"Error getting users: {e}")
             return UserListResponse(
                 users=[],
+                total=0,  # Add total field
                 total_count=0,
                 page=page,
                 limit=limit,

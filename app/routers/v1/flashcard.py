@@ -5,8 +5,10 @@ import logging
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Path, status
 from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 
 from app.core.deps import get_current_user
+from app.utils.response_standardizer import ResponseStandardizer
 from app.models.user import User
 from app.models.flashcard import (
     FlashcardCreateRequest, FlashcardUpdateRequest, FlashcardResponse,
@@ -59,7 +61,10 @@ async def get_deck_flashcards(
         )
         
         logger.info(f"User {current_user.username} retrieved {len(flashcards.flashcards)} flashcards from deck {deck_id}")
-        return flashcards
+        
+        # Standardize response format (_id -> id)
+        flashcards_dict = jsonable_encoder(flashcards)
+        return ResponseStandardizer.create_standardized_response(flashcards_dict)
         
     except ValueError as e:
         logger.warning(f"Invalid request for deck flashcards: {str(e)}")
@@ -111,7 +116,10 @@ async def create_flashcard(
         )
         
         logger.info(f"User {current_user.username} created flashcard in deck {deck_id}")
-        return new_flashcard
+        
+        # Standardize response format (_id -> id)
+        flashcard_dict = jsonable_encoder(new_flashcard)
+        return ResponseStandardizer.create_standardized_response(flashcard_dict, status_code=status.HTTP_201_CREATED)
         
     except ValueError as e:
         logger.warning(f"Invalid flashcard data: {str(e)}")
@@ -160,7 +168,10 @@ async def get_flashcard(
             )
         
         logger.info(f"User {current_user.username} accessed flashcard {flashcard_id}")
-        return flashcard
+        
+        # Standardize response format (_id -> id)
+        flashcard_dict = jsonable_encoder(flashcard)
+        return ResponseStandardizer.create_standardized_response(flashcard_dict)
         
     except HTTPException:
         raise
@@ -208,7 +219,10 @@ async def update_flashcard(
             )
         
         logger.info(f"User {current_user.username} updated flashcard {flashcard_id}")
-        return updated_flashcard
+        
+        # Standardize response format (_id -> id)
+        flashcard_dict = jsonable_encoder(updated_flashcard)
+        return ResponseStandardizer.create_standardized_response(flashcard_dict)
         
     except ValueError as e:
         logger.warning(f"Invalid flashcard update data: {str(e)}")
@@ -260,9 +274,14 @@ async def delete_flashcard(
             )
         
         logger.info(f"User {current_user.username} deleted flashcard {flashcard_id}")
+        
+        response_data = {"message": "Flashcard deleted successfully"}
+        response_dict = jsonable_encoder(response_data)
+        standardized_response = ResponseStandardizer.create_standardized_response(response_dict)
+        
         return JSONResponse(
             status_code=status.HTTP_200_OK,
-            content={"message": "Flashcard deleted successfully"}
+            content=standardized_response
         )
         
     except PermissionError as e:
@@ -309,7 +328,10 @@ async def bulk_create_flashcards(
         )
         
         logger.info(f"User {current_user.username} bulk created {result.created_count} flashcards in deck {deck_id}")
-        return result
+        
+        # Standardize response format (_id -> id)
+        result_dict = jsonable_encoder(result)
+        return ResponseStandardizer.create_standardized_response(result_dict, status_code=status.HTTP_201_CREATED)
         
     except ValueError as e:
         logger.warning(f"Invalid bulk flashcard data: {str(e)}")
@@ -353,7 +375,7 @@ async def get_deck_flashcards_alt(
 
     flashcard_service = FlashcardService()
     
-    return await flashcard_service.get_deck_flashcards(
+    result = await flashcard_service.get_deck_flashcards(
         deck_id=deck_id,
         current_user_id=str(current_user.id),
         page=page,
@@ -362,6 +384,10 @@ async def get_deck_flashcards_alt(
         tags_filter=tags_filter,
         search_query=search
     )
+    
+    # Standardize response format (_id -> id)
+    result_dict = jsonable_encoder(result)
+    return ResponseStandardizer.create_standardized_response(result_dict)
 
 
 @deck_router.post("/{deck_id}/flashcards", response_model=FlashcardResponse, status_code=status.HTTP_201_CREATED)
@@ -373,8 +399,12 @@ async def create_deck_flashcard_alt(
     """Alternative endpoint: POST /api/v1/decks/{deck_id}/flashcards"""
     flashcard_service = FlashcardService()
     
-    return await flashcard_service.create_flashcard(
+    result = await flashcard_service.create_flashcard(
         deck_id=deck_id,
         flashcard_data=flashcard_data,
         current_user_id=str(current_user.id)
     )
+    
+    # Standardize response format (_id -> id)
+    result_dict = jsonable_encoder(result)
+    return ResponseStandardizer.create_standardized_response(result_dict)
