@@ -1,0 +1,17 @@
+# Phase 5 Checklists Index
+
+This folder contains extracted checklists (code removed) from `PHASE_05_SRS_LEARNING_ALGORITHM.md` organized by step.
+
+## Files
+- PHASE_05_1_CLASS_CRUD_CHECKLIST.md
+- PHASE_05_2_CLASS_ENROLLMENT_CHECKLIST.md
+- PHASE_05_3_COURSE_CRUD_CHECKLIST.md
+- PHASE_05_4_COURSE_CLASS_ASSIGNMENT_CHECKLIST.md
+- PHASE_05_5_LESSON_CRUD_CHECKLIST.md
+- PHASE_05_6_LESSON_ORDERING_STRUCTURE_CHECKLIST.md
+- PHASE_05_7_MULTI_LEVEL_ENROLLMENT_CHECKLIST.md
+- PHASE_05_8_ENROLLMENT_REPORTING_CHECKLIST.md
+- PHASE_05_9_TESTING_CHECKLIST.md
+- PHASE_05_COMPLETION_CRITERIA.md
+
+Use these to track progress during implementation without scrolling a long specification file.

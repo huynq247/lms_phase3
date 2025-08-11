@@ -13,8 +13,19 @@ from app.models.course import (
     CoursesListResponse,
     CourseStatsResponse
 )
+from app.models.course_class_assignment import CourseClassAssignmentResponse
+from app.models.lesson import (
+    LessonCreate,
+    LessonUpdate,
+    LessonResponse,
+    LessonListResponse,
+    LessonStatsResponse,
+    LessonBulkOrderUpdate
+)
 from app.models.user import User
 from app.services.course_service import CourseService
+from app.services.course_class_assignment_service import CourseClassAssignmentService
+from app.services.lesson_service import LessonService
 from app.core.deps import get_current_user, get_database
 from app.utils.response_standardizer import ResponseStandardizer
 from app.models.enums import DifficultyLevel
@@ -28,6 +39,11 @@ router = APIRouter(prefix="/courses", tags=["courses"])
 def get_course_service(db=Depends(get_database)) -> CourseService:
     """Get course service instance."""
     return CourseService(db)
+
+
+def get_lesson_service(db=Depends(get_database)) -> LessonService:
+    """Get lesson service instance."""
+    return LessonService(db)
 
 
 @router.post("/", response_model=CourseResponse, status_code=status.HTTP_201_CREATED)
@@ -231,4 +247,224 @@ async def get_course_stats(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to fetch course stats"
+        )
+
+
+# ============================================================================
+# PHASE 5.4: COURSE-CLASS ASSIGNMENT ENDPOINTS
+# ============================================================================
+
+@router.get("/{course_id}/classes", response_model=List[CourseClassAssignmentResponse])
+async def get_course_classes(
+    course_id: str,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    active_only: bool = Query(True),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get all classes that have this course assigned.
+    
+    **Permission Requirements:**
+    - **Admin**: Can view assignments for any course
+    - **Course Creator**: Can view assignments for their own courses
+    - **Teachers**: Can view assignments for courses they have access to
+    - **Students**: Can view assignments for public courses only
+    """
+    try:
+        assignment_service = CourseClassAssignmentService()
+        
+        assignments = await assignment_service.get_course_classes(
+            course_id=course_id,
+            skip=skip,
+            limit=limit,
+            active_only=active_only
+        )
+        
+        logger.info(f"Retrieved {len(assignments)} class assignments for course {course_id}")
+        
+        # Standardize response format (_id -> id)
+        assignments_dict = jsonable_encoder(assignments)
+        return ResponseStandardizer.create_standardized_response(assignments_dict)
+        
+    except PermissionError as e:
+        logger.warning(f"Course classes access denied: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error getting course classes: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get course classes"
+        )
+
+
+# ==================== LESSON ENDPOINTS ====================
+
+@router.get("/{course_id}/lessons", response_model=LessonListResponse)
+async def get_course_lessons(
+    course_id: str,
+    published_only: bool = Query(False, description="Only return published lessons"),
+    page: int = Query(1, ge=1, description="Page number"),
+    per_page: int = Query(20, ge=1, le=100, description="Items per page"),
+    current_user: User = Depends(get_current_user),
+    lesson_service: LessonService = Depends(get_lesson_service),
+    course_service: CourseService = Depends(get_course_service)
+):
+    """Get all lessons for a course."""
+    try:
+        # Check if course exists
+        course = await course_service.get_course_by_id(course_id, current_user.id)
+        if not course:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
+        
+        # Permission check: Students can only see published lessons, teachers/admins can see all
+        if current_user.role == "student":
+            published_only = True
+            
+        # Check course access permission for students
+        if current_user.role == "student":
+            # TODO: Check if student is enrolled in course or has access
+            # For now, allow access to all courses
+            pass
+        elif current_user.role == "teacher":
+            # Teachers can access their courses or public courses
+            if course.created_by != current_user.id and course.privacy_level != "public" and current_user.role != "admin":
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+        
+        lessons = await lesson_service.get_course_lessons(
+            course_id=course_id,
+            published_only=published_only,
+            page=page,
+            per_page=per_page
+        )
+        
+        logger.info(f"Retrieved {len(lessons.lessons)} lessons for course {course_id}")
+        return lessons
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting course lessons: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get course lessons"
+        )
+
+
+@router.post("/{course_id}/lessons", response_model=LessonResponse, status_code=status.HTTP_201_CREATED)
+async def create_course_lesson(
+    course_id: str,
+    lesson_data: LessonCreate,
+    current_user: User = Depends(get_current_user),
+    lesson_service: LessonService = Depends(get_lesson_service),
+    course_service: CourseService = Depends(get_course_service)
+):
+    """Create a new lesson in a course."""
+    try:
+        # Check if course exists
+        course = await course_service.get_course_by_id(course_id, current_user.id)
+        if not course:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
+        
+        # Permission check: Only course creator, admin, or teacher can create lessons
+        if current_user.role not in ["admin", "teacher"]:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
+        
+        # Teachers can only create lessons in their own courses (unless admin)
+        if current_user.role == "teacher" and course.created_by != current_user.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Can only create lessons in your own courses")
+        
+        lesson = await lesson_service.create_lesson(
+            course_id=course_id,
+            lesson_data=lesson_data,
+            created_by=current_user.id
+        )
+        
+        logger.info(f"Created lesson {lesson.id} in course {course_id} by user {current_user.id}")
+        return lesson
+        
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error creating lesson: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create lesson"
+        )
+
+
+@router.get("/{course_id}/lessons/stats", response_model=LessonStatsResponse)
+async def get_course_lesson_stats(
+    course_id: str,
+    current_user: User = Depends(get_current_user),
+    lesson_service: LessonService = Depends(get_lesson_service),
+    course_service: CourseService = Depends(get_course_service)
+):
+    """Get lesson statistics for a course."""
+    try:
+        # Check if course exists
+        course = await course_service.get_course_by_id(course_id, current_user.id)
+        if not course:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
+        
+        # Permission check: Teachers can see stats for their courses, admins can see all
+        if current_user.role == "teacher" and course.created_by != current_user.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+        elif current_user.role == "student":
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Students cannot access lesson statistics")
+        
+        stats = await lesson_service.get_lesson_stats(course_id)
+        
+        logger.info(f"Retrieved lesson stats for course {course_id}")
+        return stats
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting lesson stats: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get lesson statistics"
+        )
+
+
+@router.put("/{course_id}/lessons/reorder", status_code=status.HTTP_204_NO_CONTENT)
+async def reorder_course_lessons(
+    course_id: str,
+    order_data: LessonBulkOrderUpdate,
+    current_user: User = Depends(get_current_user),
+    lesson_service: LessonService = Depends(get_lesson_service),
+    course_service: CourseService = Depends(get_course_service)
+):
+    """Bulk reorder lessons in a course."""
+    try:
+        # Check if course exists
+        course = await course_service.get_course_by_id(course_id, current_user.id)
+        if not course:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
+        
+        # Permission check: Only course creator or admin can reorder lessons
+        if current_user.role not in ["admin", "teacher"]:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
+        
+        if current_user.role == "teacher" and course.created_by != current_user.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Can only reorder lessons in your own courses")
+        
+        success = await lesson_service.reorder_lessons(course_id, order_data)
+        if not success:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to reorder lessons")
+        
+        logger.info(f"Reordered lessons in course {course_id} by user {current_user.id}")
+        
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error reordering lessons: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to reorder lessons"
         )

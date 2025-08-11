@@ -1,4 +1,4 @@
-"""Class (Classroom) management router for Phase 5.1 & 5.2"""
+"""Class (Classroom) management router for Phase 5.1 & 5.2 & 5.4"""
 import logging
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File
@@ -14,7 +14,9 @@ from app.models.classroom import (
     EnrollmentRequest, EnrollmentResponse, BulkEnrollmentRequest, 
     BulkEnrollmentResponse, ClassStudentsResponse
 )
+from app.models.course_class_assignment import CourseClassAssignmentResponse
 from app.services.class_service import ClassService
+from app.services.course_class_assignment_service import CourseClassAssignmentService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/classes", tags=["class-management"])
@@ -253,3 +255,145 @@ async def bulk_enroll_students(
     except Exception as e:
         logger.error(f"Unexpected error during bulk enrollment: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error during bulk enrollment")
+
+
+# ============================================================================
+# PHASE 5.4: COURSE-CLASS ASSIGNMENT ENDPOINTS  
+# ============================================================================
+
+@router.post("/{class_id}/assign-course/{course_id}", response_model=CourseClassAssignmentResponse)
+@require_role([UserRole.TEACHER, UserRole.ADMIN])
+async def assign_course_to_class(
+    class_id: str,
+    course_id: str,
+    assignment_notes: Optional[str] = Query(None, max_length=500),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Assign a course to a class.
+    
+    **Permission Requirements:**
+    - **Admin**: Can assign any course to any class
+    - **Teacher**: Can assign courses to their own classes (course must be public or owned by teacher)
+    - **Students**: Permission denied
+    """
+    try:
+        assignment_service = CourseClassAssignmentService()
+        
+        assignment = await assignment_service.assign_course_to_class(
+            class_id=class_id,
+            course_id=course_id,
+            requesting_user=current_user,
+            assignment_notes=assignment_notes
+        )
+        
+        if not assignment:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to create assignment"
+            )
+        
+        logger.info(f"Course {course_id} assigned to class {class_id} by {current_user.username}")
+        
+        # Standardize response format (_id -> id)
+        assignment_dict = jsonable_encoder(assignment)
+        return ResponseStandardizer.create_standardized_response(assignment_dict)
+        
+    except ValueError as e:
+        logger.warning(f"Assignment validation error: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except PermissionError as e:
+        logger.warning(f"Assignment permission error: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error assigning course to class: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to assign course to class"
+        )
+
+
+@router.delete("/{class_id}/unassign-course/{course_id}", status_code=status.HTTP_204_NO_CONTENT)
+@require_role([UserRole.TEACHER, UserRole.ADMIN])
+async def unassign_course_from_class(
+    class_id: str,
+    course_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Unassign a course from a class (soft delete).
+    
+    **Permission Requirements:**
+    - **Admin**: Can unassign any course from any class
+    - **Teacher**: Can unassign courses from their own classes
+    - **Students**: Permission denied
+    """
+    try:
+        assignment_service = CourseClassAssignmentService()
+        
+        success = await assignment_service.unassign_course_from_class(
+            class_id=class_id,
+            course_id=course_id,
+            requesting_user=current_user
+        )
+        
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Assignment not found or already inactive"
+            )
+        
+        logger.info(f"Course {course_id} unassigned from class {class_id} by {current_user.username}")
+        
+    except PermissionError as e:
+        logger.warning(f"Unassignment permission error: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error unassigning course from class: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to unassign course from class"
+        )
+
+
+@router.get("/{class_id}/courses", response_model=List[CourseClassAssignmentResponse])
+async def get_class_courses(
+    class_id: str,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    active_only: bool = Query(True),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get all courses assigned to a class.
+    
+    **Permission Requirements:**
+    - **Admin**: Can view assignments for any class
+    - **Teacher**: Can view assignments for their own classes
+    - **Students**: Can view assignments for classes they're enrolled in
+    """
+    try:
+        assignment_service = CourseClassAssignmentService()
+        
+        assignments = await assignment_service.get_class_courses(
+            class_id=class_id,
+            skip=skip,
+            limit=limit,
+            active_only=active_only
+        )
+        
+        logger.info(f"Retrieved {len(assignments)} course assignments for class {class_id}")
+        
+        # Standardize response format (_id -> id)
+        assignments_dict = jsonable_encoder(assignments)
+        return ResponseStandardizer.create_standardized_response(assignments_dict)
+        
+    except PermissionError as e:
+        logger.warning(f"Class courses access denied: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error getting class courses: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get class courses"
+        )

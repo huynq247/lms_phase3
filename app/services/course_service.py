@@ -92,18 +92,30 @@ class CourseService:
     async def update_course(self, course_id: str, course_data: CourseUpdateRequest, requesting_user: User) -> Optional[CourseResponse]:
         """Update a course."""
         try:
+            logger.info(f"Attempting to update course {course_id} by user {requesting_user.username}")
+            
             # Check if course exists and user has permission
             existing_course = await self.collection.find_one({"_id": ObjectId(course_id)})
             
             if not existing_course:
+                logger.warning(f"Course {course_id} not found")
                 return None
             
-            # Check ownership permissions
-            if existing_course.get("creator_id") != requesting_user.id and requesting_user.role != "admin":
+            logger.info(f"Course found. Creator: {existing_course.get('creator_id')}, Requesting user: {requesting_user.id}, User role: {requesting_user.role}")
+            
+            # Check ownership permissions - ensure both IDs are strings for comparison
+            creator_id_str = str(existing_course.get("creator_id"))
+            requesting_user_id_str = str(requesting_user.id)
+            
+            if creator_id_str != requesting_user_id_str and requesting_user.role != "admin":
+                logger.warning(f"Permission denied for user {requesting_user.username} to update course {course_id}")
+                logger.warning(f"Creator ID: '{creator_id_str}', Requesting user ID: '{requesting_user_id_str}'")
                 raise PermissionError("Only course creator or admin can update this course")
             
             # Prepare update data (only include provided fields)
             update_data = {"updated_at": datetime.utcnow()}
+            
+            logger.info(f"Received course data: {course_data}")
             
             if course_data.title is not None:
                 update_data["title"] = course_data.title
@@ -112,7 +124,12 @@ class CourseService:
             if course_data.category is not None:
                 update_data["category"] = course_data.category
             if course_data.difficulty_level is not None:
-                update_data["difficulty_level"] = course_data.difficulty_level.value
+                # Handle both enum and string values
+                if hasattr(course_data.difficulty_level, 'value'):
+                    update_data["difficulty_level"] = course_data.difficulty_level.value
+                else:
+                    update_data["difficulty_level"] = str(course_data.difficulty_level)
+                logger.info(f"Setting difficulty_level: {update_data['difficulty_level']}")
             if course_data.is_public is not None:
                 update_data["is_public"] = course_data.is_public
             if course_data.tags is not None:
@@ -121,8 +138,8 @@ class CourseService:
                 update_data["prerequisites"] = course_data.prerequisites
             if course_data.estimated_hours is not None:
                 update_data["estimated_hours"] = course_data.estimated_hours
-            if course_data.is_active is not None:
-                update_data["is_active"] = course_data.is_active
+            
+            logger.info(f"Update data: {update_data}")
             
             # Update course
             result = await self.collection.update_one(
@@ -130,11 +147,17 @@ class CourseService:
                 {"$set": update_data}
             )
             
+            logger.info(f"Update result: matched={result.matched_count}, modified={result.modified_count}")
+            
             if result.modified_count == 0:
                 logger.warning(f"No changes made to course {course_id}")
             
             # Fetch updated course
             updated_course = await self.collection.find_one({"_id": ObjectId(course_id)})
+            
+            if not updated_course:
+                logger.error(f"Could not fetch updated course {course_id}")
+                raise Exception("Failed to fetch updated course")
             
             logger.info(f"Course {course_id} updated successfully")
             return self._document_to_response(updated_course)
@@ -143,6 +166,7 @@ class CourseService:
             raise
         except Exception as e:
             logger.error(f"Error updating course {course_id}: {str(e)}")
+            logger.exception("Full traceback:")
             raise e
     
     async def delete_course(self, course_id: str, requesting_user: User) -> bool:
@@ -154,8 +178,11 @@ class CourseService:
             if not existing_course:
                 return False
             
-            # Check ownership permissions
-            if existing_course.get("creator_id") != requesting_user.id and requesting_user.role != "admin":
+            # Check ownership permissions - ensure both IDs are strings for comparison
+            creator_id_str = str(existing_course.get("creator_id"))
+            requesting_user_id_str = str(requesting_user.id)
+            
+            if creator_id_str != requesting_user_id_str and requesting_user.role != "admin":
                 raise PermissionError("Only course creator or admin can delete this course")
             
             # Soft delete by setting is_active to False

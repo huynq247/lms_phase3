@@ -314,7 +314,7 @@ class ClassService:
                 student_doc = student_map.get(student_id)
                 if student_doc:
                     students.append({
-                        "user_id": student_id,
+                        "id": student_id,  # Changed from user_id to id for standardization
                         "username": student_doc.get("username", "Unknown"),
                         "email": student_doc.get("email", ""),
                         "full_name": student_doc.get("full_name", ""),

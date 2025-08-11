@@ -115,6 +115,25 @@ app.include_router(classroom.router, prefix=settings.api_v1_prefix, tags=["class
 from app.routers.v1 import courses
 app.include_router(courses.router, prefix=settings.api_v1_prefix, tags=["course-management"])
 
+from app.routers.v1 import lessons
+app.include_router(lessons.router, prefix=settings.api_v1_prefix, tags=["lesson-management"])
+
+# Import and include lesson structure router (Phase 5.6)
+from app.routers.v1 import lesson_structure
+app.include_router(lesson_structure.router, prefix=settings.api_v1_prefix, tags=["lesson-structure"])
+
+# Import and include lesson deck assignment router (Phase 5.6)
+from app.routers.v1 import lesson_deck_assignments
+app.include_router(lesson_deck_assignments.router, prefix=settings.api_v1_prefix, tags=["lesson-deck-assignments"])
+
+# Import and include enrollment router (Phase 5.7)
+from app.routers.v1 import enrollments
+app.include_router(enrollments.router, prefix=settings.api_v1_prefix, tags=["multi-level-enrollment"])
+
+# Import and include reports router (Phase 5.8)
+from app.routers.v1 import reports
+app.include_router(reports.router, prefix=settings.api_v1_prefix, tags=["enrollment-reporting"])
+
 # Test comment to trigger reload
 
 @app.get("/")
