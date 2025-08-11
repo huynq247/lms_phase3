@@ -134,6 +134,18 @@ app.include_router(enrollments.router, prefix=settings.api_v1_prefix, tags=["mul
 from app.routers.v1 import reports
 app.include_router(reports.router, prefix=settings.api_v1_prefix, tags=["enrollment-reporting"])
 
+# Import and include study sessions router (Phase 6.1)
+from app.routers.v1 import study_sessions
+app.include_router(study_sessions.router, prefix=settings.api_v1_prefix, tags=["study-sessions"])
+
+# Import and include progress analytics router (Phase 6.4)
+from app.routers.v1 import progress_analytics
+app.include_router(progress_analytics.router, prefix=settings.api_v1_prefix, tags=["progress-analytics"])
+
+# Import and include analytics router (Phase 6.5)
+from app.routers.v1 import analytics
+app.include_router(analytics.router, prefix=settings.api_v1_prefix, tags=["analytics-charts"])
+
 # Test comment to trigger reload
 
 @app.get("/")
